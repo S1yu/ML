@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
-from matplotlib import pyplot as plt
+
 
 class LeNet(nn.Module):
     def __init__(self):
@@ -35,9 +35,10 @@ class LeNet(nn.Module):
 def load_data_fashion_mnist(batch_size):
 
     transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-    mnist_train = torchvision.datasets.FashionMNIST(root='~/Datasets/FashionMNIST', train=True, download=False, transform=transform)
-    mnist_test = torchvision.datasets.FashionMNIST(root='~/Datasets/FashionMNIST', train=False, download=False, transform=transform)
-
+    mnist_train = torchvision.datasets.FashionMNIST(root='~/Datasets/FashionMNIST', train=True, download=False,
+                                                    transform=transform)
+    mnist_test = torchvision.datasets.FashionMNIST(root='~/Datasets/FashionMNIST', train=False, download=False,
+                                                   transform=transform)
 
     train_iter = torch.utils.data.DataLoader(mnist_train, batch_size=batch_size, shuffle=True, num_workers=0)
     test_iter = torch.utils.data.DataLoader(mnist_test, batch_size=batch_size, shuffle=False, num_workers=0)
@@ -62,18 +63,17 @@ def evaluate_accuracy(data_iter, net, device=None):
     return acc_sum / n
 
 
-
-def train(net,train,test,bahchsize,optimizer, num_epochs):
-    net =net.to(torch.device("cpu"))
+def train(net, train_iter, test_iter, optimizer, num_epochs):
+    net = net.to(torch.device("cpu"))
     loss = nn.CrossEntropyLoss()
-    batch_count=0
+    batch_count = 0
     for epoch in range(num_epochs):
         train_l_sum, train_acc_sum, n = 0.0, 0.0, 0
-        for X ,Y in train:
-            X=X.to(torch.device("cpu"))
-            Y=Y.to(torch.device("cpu"))
-            y_hat=net(X)
-            l=loss(y_hat,Y)
+        for X, Y in train_iter:
+            X = X.to(torch.device("cpu"))
+            Y = Y.to(torch.device("cpu"))
+            y_hat = net(X)
+            l = loss(y_hat, Y)
             optimizer.zero_grad()
             l.backward()
             optimizer.step()
@@ -81,23 +81,17 @@ def train(net,train,test,bahchsize,optimizer, num_epochs):
             train_acc_sum += (y_hat.argmax(dim=1) == Y).sum().cpu().item()
             n += Y.shape[0]
             batch_count += 1
-        test_acc = evaluate_accuracy(test, net)
-        if epoch % 10 == 0:
-            print(
-                f'epoch {epoch + 1} : loss {train_l_sum / batch_count:.3f}, train acc {train_acc_sum / n:.3f}, test acc {test_acc:.3f}')
+        test_acc = evaluate_accuracy(test_iter, net)
+        print(
+            f'epoch {epoch + 1} : loss {train_l_sum / batch_count:.3f}, train acc {train_acc_sum / n:.3f}, test acc {test_acc:.3f}')
 
 
 if __name__ == '__main__':
-    bathc_size=20
-    lr, num_epochs = 0.9, 10
-    net =LeNet()
-    opt=torch.optim.SGD(net.parameters(),lr=lr)
+    bathc_size = 256
+    lr, num_epochs = 0.01, 10
+    net = LeNet()
+    opt = torch.optim.SGD(net.parameters(), lr=lr)
 
     train_iter, test_iter = load_data_fashion_mnist(batch_size=bathc_size)
     # train
-    train(net, train_iter, test_iter, bathc_size, opt, num_epochs)
-
-
-
-
-
+    train(net, train_iter, test_iter, opt, num_epochs)
